@@ -1,0 +1,10 @@
+; $Id$
+
+name = ClubSite
+version = 6.x-1.x-dev
+description = Custom module built for ClubSite.
+core = 6.x
+
+dependencies[] = profile
+dependencies[] = views
+dependencies[] = rules

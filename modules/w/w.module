@@ -1,0 +1,142 @@
+<?php
+// $Id$
+
+define('W_USER_CODE_LENGTH', 16);
+define('W_USER_CODE_FIELD_WEIGHT', -1);
+define('W_USER_CODE_FIELDSET',     'Clubsite');
+define('W_PATH', drupal_get_path('module', 'w'));
+
+/**
+ * Implements hook_perm().
+ */
+function w_perm() {
+  return array(
+    'administer user code',
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function w_menu() {
+  $items['admin/user/user-code'] = array(
+    'title' => 'User code',
+    'access arguments' => array('administer user code'),
+    'file' => 'includes/w.code.admin.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('w_user_code_settings_form'),
+  );
+  
+  $items['admin/user/user-code/register'] = array(
+    'title' => 'Registration form',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  
+  $items['admin/user/user-code/invite'] = array(
+    'title' => 'User code',
+    'access arguments' => array('administer user code'),
+    'file' => 'includes/w.code.admin.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('w_user_code_invite_form'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function w_menu_alter(&$items) {
+  $items['admin/user/user/create']['file path'] = W_PATH;
+  $items['admin/user/user/create']['file'] = 'includes/w.signup.inc';
+  $items['admin/user/user/create']['page callback'] = 'w_user_signup_callback';
+  unset($items['admin/user/user/create']['page arguments']);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function w_theme() {
+  return array(
+    'w_user_code_settings_form' => array(
+      'arguments' => array(
+        'form' => NULL,
+      ),
+    ),
+    'w_global_tokens_list' => array(),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function w_form_user_register_alter(&$form, &$form_state) {
+  module_load_include('inc', 'w', 'includes/w.signup');
+  return _w_form_user_register_alter($form, $form_state);
+}
+
+/**
+ * Implements hook_mail().
+ */
+function w_mail($key, &$message, $params) {
+  if ($key === 'userCodeInvitation') {
+    module_load_include('inc', 'w', 'includes/w.code.admin');
+    return _w_mail_user_code_invitation_mail($message, $params);
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function w_views_api() {
+  return array(
+    'api'  => views_api_version(),
+    'path' => W_PATH . '/views',
+  );
+}
+
+/**
+ * Implements hook_token_list().
+ */
+function w_token_list($type = 'all') {
+  $tokens['global']['user-code'] = t("The random user code.");
+
+  return $tokens;
+}
+
+/**
+ * Implements hook_token_values().
+ */
+function w_token_values($type, $obj = NULL, $options = array()) {
+  return array(
+    'user-code' => w_generate_user_code(W_USER_CODE_LENGTH, TRUE, TRUE),
+  );
+}
+
+/**
+ * Theming function to display available tokens
+ */
+function theme_w_global_tokens_list() {
+  $output = '';
+
+  foreach (module_invoke_all('token_list', 'all') as $group => $tokens) {
+    $rows = array();
+    foreach ($tokens as $token => $description) {
+      $rows[] = array(
+        "[{$token}]",
+        $description
+      );
+    }
+
+    $output .= theme(
+      'table', 
+      array(t('Token'), t('Description')),
+      $rows,
+      array(),
+      ucfirst($group)
+    );
+  }
+  
+  return $output;
+}

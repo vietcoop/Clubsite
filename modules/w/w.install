@@ -1,0 +1,53 @@
+<?php
+// $Id$
+
+/**
+ * Implements hook_install().
+ */
+function w_install() {
+  drupal_install_schema('w');
+}
+
+/** 
+ * Implements hook_uninstall().
+ */
+function w_uninstall() {
+  drupal_uninstall_schema('w');
+  variable_del('wUserCodeFieldsVisibility');
+  variable_del('wUserCodeInvitationSubjectTemplate');
+  variable_del('wUserCodeInvitationBodyTemplate');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function w_schema() {
+  $schema = array();
+  
+  // User code.
+  $schema['w_user_code'] = array(
+    'description' => 'Save userID-userCode pair.',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'User ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'code' => array(
+        'description' => 'User code',
+        'type' => 'varchar',
+        'length' => '19',
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array(
+      'code' => array('code')
+    ),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+  );
+
+  return $schema;
+}

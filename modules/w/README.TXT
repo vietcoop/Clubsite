@@ -22,3 +22,14 @@ If they do not have an invitation code:
   who could vouch for them.
 
 If they have the invitation code they should enter it there.
+
+====================
+  User Inactivation
+====================
+
+  Users who have been inactive for 45 days or more are downgraded to Inactive User 
+  and sent an e-mail (built on a administrative-side template) letting them know that
+  they are welcome back on the forum.
+  
+  Once they log back in, they are immediately converted to Active User (or New User if 
+  one of the field is missing).

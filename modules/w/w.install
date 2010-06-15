@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Implementations of Install hooks.
+ */
+
+/**
  * Implements hook_install().
  */
 function w_install() {
@@ -16,6 +21,9 @@ function w_uninstall() {
   variable_del('wUserCodeFieldsVisibility');
   variable_del('wUserCodeInvitationSubjectTemplate');
   variable_del('wUserCodeInvitationBodyTemplate');
+  variable_del('wUserFirstTimeLoginMessage');
+  variable_del('wUserInactivation');
+  variable_del('wUserInactivationRolesToRemove');
 }
 
 /**

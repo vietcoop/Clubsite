@@ -1,10 +1,43 @@
 <?php
 // $Id$
 
-define('W_USER_CODE_LENGTH', 16);
+/**
+ * @file
+ * 
+ * ClubSite module basic functions.
+ */
+
+/**
+ * Path to module directory.
+ */
+define('W_PATH', drupal_get_path('module', 'w'));
+
+/**
+ * User Code field CONSTANTS
+ */
+define('W_USER_CODE_LENGTH',       16);
 define('W_USER_CODE_FIELD_WEIGHT', -1);
 define('W_USER_CODE_FIELDSET',     'Clubsite');
-define('W_PATH', drupal_get_path('module', 'w'));
+
+/**
+ * Default values for user's first time login.
+ */
+define('W_FIRST_TIME_LOGIN_MESSAGE', '');
+
+/**
+ * Default values for user-inactivation.
+ */
+define('W_USER_INACTIVATION_DAYS', 45);
+
+/**
+ * Implements hook_init().
+ */
+function w_init() {
+  if (!empty($_SESSION['w_first_time_login'])) {
+    module_load_include('inc', 'w', 'includes/w.user.inc');
+    w_user_first_time_login();
+  }
+}
 
 /**
  * Implements hook_perm().
@@ -31,13 +64,33 @@ function w_menu() {
     'title' => 'Registration form',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  
+
   $items['admin/user/user-code/invite'] = array(
     'title' => 'User code',
     'access arguments' => array('administer user code'),
     'file' => 'includes/w.code.admin.inc',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('w_user_code_invite_form'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  
+  // User first time login message
+  $items['admin/user/settings/first-time-login'] = array(
+    'title' => 'First time login',
+    'access arguments' => array('administer users'),
+    'file' => 'includes/w.user.admin.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('w_user_first_time_login_settings_form'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  
+  // User Inactivation
+  $items['admin/user/settings/user-inactivation'] = array(
+    'title' => 'User inactivation',
+    'access arguments' => array('administer users'),
+    'file' => 'includes/w.user.admin.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('w_user_inactivation_settings_form'),
     'type' => MENU_LOCAL_TASK,
   );
 
@@ -55,6 +108,19 @@ function w_menu_alter(&$items) {
 }
 
 /**
+ * Implements hook_user().
+ */
+function w_user($op, &$edit, &$account, $category = NULL) {
+  if ($op === 'load') {
+    // First time login
+    // @see hook_init().
+    if ($account->uid && !$account->login) {
+      $_SESSION['w_first_time_login'] = TRUE;
+    }
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function w_theme() {
@@ -66,6 +132,15 @@ function w_theme() {
     ),
     'w_global_tokens_list' => array(),
   );
+}
+
+/**
+ * Implements hook_cron().
+ */
+function w_cron() {
+  // User intactivation
+  module_load_include('inc', 'w', 'includes/w.user');
+  w_user_inactivation_cron();
 }
 
 /**
@@ -137,6 +212,6 @@ function theme_w_global_tokens_list() {
       ucfirst($group)
     );
   }
-  
+
   return $output;
 }

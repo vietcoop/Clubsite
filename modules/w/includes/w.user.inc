@@ -7,6 +7,30 @@
  */
 
 /**
+ * User login.
+ *
+ * Grant roles.
+ * @see w_user()
+ * @see w_user_inactivation_cron()
+ */
+function w_user_login($account) {
+  $rids = variable_get('wUserInactivationRolesToRemove', array());
+  if (!empty($rids)) {
+    $save = FALSE;
+    foreach ($rids as $rid) {
+      if (isset($account->roles[$rid])) {
+        $save = TRUE;
+        $account->roles[$rid] = $rid;
+      }
+    }
+
+    if ($save) {
+      user_save($account);
+    }
+  }
+}
+
+/**
  * @see w_init().
  * @see w_user().
  * @see w_user_first_time_login_settings_form().
@@ -33,7 +57,7 @@ function w_user_first_time_login() {
  */
 function w_user_inactivation_cron() {
   $rids = variable_get('wUserInactivationRolesToRemove', array());
-  if (!empty($roles_removed)) {
+  if (!empty($rids)) {
     foreach (w_user_inactivation_find() as $uid) {
       $account = user_load($uid);
 

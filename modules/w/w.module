@@ -118,6 +118,10 @@ function w_user($op, &$edit, &$account, $category = NULL) {
       $_SESSION['w_first_time_login'] = TRUE;
     }
   }
+  elseif ($op === 'login') {
+    module_load_include('inc', 'w', 'includes/w.user');
+    return w_user_login($account);
+  }
 }
 
 /**

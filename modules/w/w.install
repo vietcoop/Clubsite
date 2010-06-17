@@ -31,29 +31,62 @@ function w_uninstall() {
  */
 function w_schema() {
   $schema = array();
-  
-  // User code.
+
+  // User code
   $schema['w_user_code'] = array(
     'description' => 'Save userID-userCode pair.',
     'fields' => array(
-      'uid' => array(
-        'description' => 'User ID',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
       'code' => array(
         'description' => 'User code',
         'type' => 'varchar',
         'length' => '19',
         'not null' => TRUE,
       ),
+      'uid' => array(
+        'description' => 'User ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
     ),
-    'unique keys' => array(
-      'code' => array('code')
-    ),
+    'primary key' => array('code'),
     'indexes' => array(
       'uid' => array('uid'),
+    ),
+  );
+
+  // User-code extra informations
+  $schema['w_user_code_extra'] = array(
+    'description' => 'Save extra informations for user-code.',
+    'fields' => array(
+      'code' => array(
+        'description' => 'User code',
+        'type' => 'varchar',
+        'length' => '19',
+        'not null' => TRUE,
+      ),
+      'invitor_uid' => array(
+        'description' => 'Invitor User ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'Timestamp for when code was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'friend_mail' => array(
+        'description' => 'Friend\'s Email address',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('code'),
+    'indexes' => array(
+      'created' => array('created'),
     ),
   );
 

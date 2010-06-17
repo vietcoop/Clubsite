@@ -191,7 +191,7 @@ function _w_user_invitation($friend_mail, $invitorUID, $lang, $params) {
 
 function w_user_register_path_with_invitation_code($code, $absolute = TRUE) {
   return url(
-    "user/register",
+    "user/register/use-code",
     array(
       'query' => "invitation-code={$code}",
       'absolute' => $absolute

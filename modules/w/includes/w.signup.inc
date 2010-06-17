@@ -17,9 +17,9 @@ function _w_form_user_register_alter(&$form, &$form_state) {
       '#weight' => W_USER_CODE_FIELD_WEIGHT,
       '#title'  => t('User code'),
       '#disabled' => TRUE,
-      '#default_value' => 
-        $use_code && sess_read(W_COOKIE_USER_CODE)
-          ? sess_read(W_COOKIE_USER_CODE)
+      '#value' => 
+        $use_code && !empty($_SESSION[W_COOKIE_USER_CODE])
+          ? $_SESSION[W_COOKIE_USER_CODE]
           : '',
     );
 
@@ -53,9 +53,13 @@ function _w_form_user_register_alter(&$form, &$form_state) {
 }
 
 function w_user_signup_callback($use_code = '') {
+  if (!empty($_GET['invitation-code'])) {
+    $_SESSION[W_COOKIE_USER_CODE] = filter_xss($_GET['invitation-code']);
+  }
+
   if ($use_code === 'use-code' || $use_code === 'no-code') {
     if ($use_code === 'use-code') {
-      $code = sess_read(W_COOKIE_USER_CODE);
+      $code = $_SESSION[W_COOKIE_USER_CODE];
 
       if (TRUE !== w_user_code_validate($code)) {
         return w_user_signup_callback();
@@ -103,10 +107,14 @@ function w_user_signup_user_code_form_validate(&$form, &$form_state) {
 
 function w_user_signup_user_code_form_submit(&$form, &$form_state) {
   if ($form_state['clicked_button']['#value'] === t('Use code')) {
-    sess_write(W_COOKIE_USER_CODE, $form_state['values']['w_user_code']);
+    $_SESSION[W_COOKIE_USER_CODE] = $form_state['values']['w_user_code'];
     $form_state['redirect'] = arg(0) === 'admin' ? 'admin/user/user/create/use-code' : 'user/register/use-code';
   }
   else {
     $form_state['redirect'] = arg(0) === 'admin' ? 'admin/user/user/create/no-code' : 'user/register/no-code';
   }
+}
+
+function w_user_insert($code, $userID) {
+  w_user_code_use($code, $userID);
 }

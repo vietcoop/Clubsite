@@ -16,8 +16,8 @@ define('W_PATH', drupal_get_path('module', 'w'));
  * User Code field CONSTANTS
  */
 define('W_USER_CODE_LENGTH',       16);
-define('W_USER_CODE_FIELD_WEIGHT', -1);
-define('W_USER_CODE_FIELDSET',     'Clubsite');
+define('W_USER_CODE_FIELD_WEIGHT', -10);
+define('W_USER_CODE_FIELDSET',     '');
 
 /**
  * Default values for user's first time login.
@@ -40,7 +40,7 @@ define('W_USER_CODE_INVITATION_BODY_TEMPLATE', '');
  */
 function w_init() {
   if (!empty($_SESSION['w_first_time_login'])) {
-    module_load_include('inc', 'w', 'includes/w.user.inc');
+    module_load_include('inc', 'w', 'includes/w.user');
     w_user_first_time_login();
   }
 }
@@ -116,10 +116,12 @@ function w_menu() {
  * Implements hook_menu_alter().
  */
 function w_menu_alter(&$items) {
-  $items['admin/user/user/create']['file path'] = W_PATH;
-  $items['admin/user/user/create']['file'] = 'includes/w.signup.inc';
-  $items['admin/user/user/create']['page callback'] = 'w_user_signup_callback';
-  unset($items['admin/user/user/create']['page arguments']);
+  foreach (array('admin/user/user/create', 'user/register') as $k) {
+    $items[$k]['file path'] = W_PATH;
+    $items[$k]['file'] = 'includes/w.signup.inc';
+    $items[$k]['page callback'] = 'w_user_signup_callback';
+    unset($items[$k]['page arguments']);
+  }
 }
 
 /**
@@ -136,6 +138,13 @@ function w_user($op, &$edit, &$account, $category = NULL) {
   elseif ($op === 'login') {
     module_load_include('inc', 'w', 'includes/w.user');
     return w_user_login($account);
+  }
+  elseif ($op === 'insert') {
+    if (!empty($edit['w_user_code'])) {
+      $code = $edit['w_user_code'];
+      module_load_include('inc', 'w', 'includes/w.user');
+      return w_user_insert($code, $account->uid);
+    }
   }
 }
 

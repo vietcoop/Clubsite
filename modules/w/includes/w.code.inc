@@ -149,3 +149,15 @@ function w_user_code_save($record) {
 
   return drupal_write_record('w_user_code', $record);
 }
+
+function w_user_code_use($code, $userID) {
+  db_query(
+    "UPDATE {w_user_code} SET uid = %d WHERE code = '%s'",
+    $userID, $code
+  );
+
+  db_query(
+    "UPDATE {w_user_code_extra} SET friend_mail = '' WHERE code = '%s'",
+    $code
+  );
+}

@@ -7,9 +7,9 @@
 
 define('W_COOKIE_USER_CODE', 'wUserCode');
 
- /**
-  * Check is the userCode already used.
-  */
+/**
+ * Check is the userCode already used.
+ */
 function w_user_code_is_duplicated($code) {
   $counter = db_result(db_query(
     "SELECT COUNT(*) FROM {w_user_code} WHERE code LIKE '%s'",
@@ -66,9 +66,55 @@ function w_user_code_remove($uid) {
 }
 
 /**
+ * Get user code for a friend.
+ * Create new code if it is not existing.
+ * @return string Saved user code.
+ */
+function w_user_code_get($friend_mail, $invitor_uid = 0, $code_length = 16) {
+  // Find existing user
+  $friendUID = db_result(db_query(
+    "SELECT uid FROM {users} WHERE mail = '%s'",
+    $friend_mail
+  ));
+
+  // Friend is already.
+  if ($friendUID) {
+    $code = db_result(db_query("SELECT code FROM {w_user_code} WHERE uid = %d", $friendUID));
+  }
+  // Trying to find generated code for the email address.
+  else {
+    $code = db_result(db_query(
+      "SELECT wuc.code"
+        . " FROM {w_user_code} wuc"
+        . " LEFT JOIN {w_user_code_extra} wuce ON wuc.code = wuce.code"
+        . " WHERE wuce.friend_mail = '%s'",
+      $friend_mail
+    ));
+  }
+  
+  // Code is not existing, create a new one.
+  if (empty($code)) {
+    $record = new stdClass;
+    $record->code = w_user_code_generate($code_length);
+    $record->uid  = (int)$friendUID;
+    $record->extra = (object)array(
+      'invitor_uid' => $invitor_uid,
+      'created' => time(),
+      'friend_mail' => $friend_mail
+    );
+
+    if (FALSE !== w_user_code_save($record)) {
+      $code = $record->code;
+    }
+  }
+
+  return !empty($code) ? $code : FALSE;
+}
+
+/**
  * Generate the random code look like: XXXX-XXXX-XXXX-XXXX.
  */
-function w_generate_user_code($length = 16, $no_duplicate = TRUE, $insert = FALSE) {
+function w_user_code_generate($length = 16) {
   $chars = "0123456789ABCDEF";
   $size  = strlen($chars);
   $code  = '';
@@ -82,14 +128,8 @@ function w_generate_user_code($length = 16, $no_duplicate = TRUE, $insert = FALS
     $counter++;
   }
 
-  if ($no_duplicate) {
-    if (w_user_code_is_duplicated($code)) {
-      return w_generate_user_code($length, $no_duplicate, $insert);
-    }
-  }
-
-  if (FALSE !== $insert) {
-    w_user_code_save($code);
+  if (w_user_code_is_duplicated($code)) {
+    return w_user_code_generate($length);
   }
 
   return $code;
@@ -97,47 +137,15 @@ function w_generate_user_code($length = 16, $no_duplicate = TRUE, $insert = FALS
 
 /**
  * Save a user-code record to database.
+ * @TODO: Code update.
  */
-function w_user_code_save($code, $uid = 0, $watchdog = TRUE) {
-  if (!w_user_code_is_duplicated($code)) {
-    if ($uid && !w_user_code($uid)) {
-      $record = new stdClass();
-      $record->uid = $uid;
-      $record->code = $code;
-      drupal_write_record('w_user_code', $record);
-
-      if ($watchdog) {
-        watchdog(
-          'user-code', 
-          t("User code (@code) created successfully."),
-          array('@code' => $code),
-          WATCHDOG_INFO
-        );
-      }
-      
-      return TRUE;
-    }
-
-    if ($watchdog) {
-      watchdog(
-        'user-code', 
-        t("Failed to create user code (@code): User already has code."),
-        array('@code' => $code),
-        WATCHDOG_ERROR
-      );
-    }
-    
-    return FALSE;
+function w_user_code_save($record) {
+  // Write extra informations first
+  if (!empty($record->extra)) {
+    $extra = $record->extra;
+    $extra->code = $record->code;
+    drupal_write_record('w_user_code_extra', $record->extra);
   }
 
-  if ($watchdog) {
-    watchdog(
-      'user-code', 
-      t("Failed to create user code (@code): It is already existed."),
-      array('@code' => $code),
-      WATCHDOG_ERROR
-    );
-  }
-
-  return FALSE;
+  return drupal_write_record('w_user_code', $record);
 }

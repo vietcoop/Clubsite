@@ -6,9 +6,6 @@
  * User-code admin forms.
  */
 
-define('W_USER_CODE_INVITATION_SUBJECT_TEMPLATE', '');
-define('W_USER_CODE_INVITATION_BODY_TEMPLATE', '');
-
 /**
  * User code settings form.
  */
@@ -88,14 +85,7 @@ function w_user_code_settings_form_submit(&$form, &$form_state) {
  * Form to send invitation.
  */
 function w_user_code_invite_form(&$form_state) {
-  $form['mail'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Email address'),
-    '#required' => TRUE,
-    '#description' => t('Email address of who you would like to send the invitation to.'),
-  );
-  
-  $form['subject'] = array(
+  $form['wUserCodeInvitationSubjectTemplate'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject template'),
     '#required' => TRUE,
@@ -103,7 +93,7 @@ function w_user_code_invite_form(&$form_state) {
     '#description' => t('Email subject template.'),
   );
 
-  $form['body'] = array(
+  $form['wUserCodeInvitationBodyTemplate'] = array(
     '#type' => 'textarea',
     '#title' => t('Body template'),
     '#default_value' => variable_get('wUserCodeInvitationBodyTemplate', W_USER_CODE_INVITATION_BODY_TEMPLATE),
@@ -120,69 +110,5 @@ function w_user_code_invite_form(&$form_state) {
     '#value' => theme('w_global_tokens_list')
   );
 
-  $form['save_template'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Save email template'),
-    '#default_value' => TRUE,
-  );
-  
-  $form['submit'] = array(
-    '#type'  => 'submit',
-    '#value' => t('Submit'),
-  );
-
-  return $form;
-}
-
-function w_user_code_invite_form_validate(&$form, &$form_state) {
-  $v = &$form_state['values'];
-  
-  // Validate email address
-  if (!valid_email_address($v['mail'])) {
-    form_set_error('mail', t('Invalid email address.'));
-  }
-  else {
-    // Is there a existing user used this email address
-    $counter = db_result(db_query(
-      "SELECT COUNT(*) FROM {users} WHERE mail = '%s'",
-      $v['mail']
-    ));
-    
-    if ($counter) {
-      form_set_error(
-        'mail',
-        t('Email address is already used by an existing user.')
-      );
-    }
-  }
-}
-
-function w_user_code_invite_form_submit(&$form, &$form_state) {
-  global $user;
-  $v = &$form_state['values'];
-
-  if ($v['save_template']) {
-    variable_set('wUserCodeInvitationSubjectTemplate', $v['subject']);
-    variable_set('wUserCodeInvitationBodyTemplate', $v['body']);
-  }
-
-  $params = array();
-  $params['subject'] = $v['subject'];
-  $params['body']    = $v['body'];
-
-  drupal_mail(
-    'w', 
-    'userCodeInvitation', 
-    $v['mail'],
-    user_preferred_language($user),
-    $params
-  );
-}
-
-/** 
- * Helper function to send invitation-mail.
- */
-function _w_mail_user_code_invitation_mail(&$message, $params) {
-  $message['subject'] = check_plain($params['subject']);
-  $message['body'][]  = drupal_html_to_text(token_replace($params['body']));
+  return system_settings_form($form);
 }

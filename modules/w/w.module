@@ -30,6 +30,12 @@ define('W_FIRST_TIME_LOGIN_MESSAGE', '');
 define('W_USER_INACTIVATION_DAYS', 45);
 
 /**
+ * @TODO
+ */
+define('W_USER_CODE_INVITATION_SUBJECT_TEMPLATE', '');
+define('W_USER_CODE_INVITATION_BODY_TEMPLATE', '');
+
+/**
  * Implements hook_init().
  */
 function w_init() {
@@ -45,6 +51,7 @@ function w_init() {
 function w_perm() {
   return array(
     'administer user code',
+    'invite people'
   );
 }
 
@@ -66,14 +73,14 @@ function w_menu() {
   );
 
   $items['admin/user/user-code/invite'] = array(
-    'title' => 'User code',
+    'title' => 'Invitation',
     'access arguments' => array('administer user code'),
     'file' => 'includes/w.code.admin.inc',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('w_user_code_invite_form'),
     'type' => MENU_LOCAL_TASK,
   );
-  
+
   // User first time login message
   $items['admin/user/settings/first-time-login'] = array(
     'title' => 'First time login',
@@ -83,7 +90,7 @@ function w_menu() {
     'page arguments' => array('w_user_first_time_login_settings_form'),
     'type' => MENU_LOCAL_TASK,
   );
-  
+
   // User Inactivation
   $items['admin/user/settings/user-inactivation'] = array(
     'title' => 'User inactivation',
@@ -92,6 +99,14 @@ function w_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('w_user_inactivation_settings_form'),
     'type' => MENU_LOCAL_TASK,
+  );
+  
+  // Invite
+  $items['invite'] = array(
+    'title' => 'Invite friend',
+    'access arguments' => array('invite people'),
+    'file' => 'includes/w.invite.inc',
+    'page callback' => 'w_user_invitation_callback',
   );
 
   return $items;
@@ -159,9 +174,9 @@ function w_form_user_register_alter(&$form, &$form_state) {
  * Implements hook_mail().
  */
 function w_mail($key, &$message, $params) {
-  if ($key === 'userCodeInvitation') {
-    module_load_include('inc', 'w', 'includes/w.code.admin');
-    return _w_mail_user_code_invitation_mail($message, $params);
+  if ($key === 'userInvitation') {
+    module_load_include('inc', 'w', 'includes/w.invite');
+    return _w_user_invitation_mail($message, $params);
   }
 }
 
@@ -176,28 +191,19 @@ function w_views_api() {
 }
 
 /**
- * Implements hook_token_list().
- */
-function w_token_list($type = 'all') {
-  $tokens['global']['user-code'] = t("The random user code.");
-
-  return $tokens;
-}
-
-/**
- * Implements hook_token_values().
- */
-function w_token_values($type, $obj = NULL, $options = array()) {
-  return array(
-    'user-code' => w_generate_user_code(W_USER_CODE_LENGTH, TRUE, TRUE),
-  );
-}
-
-/**
  * Theming function to display available tokens
  */
 function theme_w_global_tokens_list() {
-  $output = '';
+  $output = theme(
+    'table', 
+    array(t('Token'), t('Description')),
+    array(
+      array('[user-invitation-code]', 'User invitation code.'),
+      array('[url-register]', 'URL to register with invitation code.'),
+    ),
+    array(),
+    ucfirst(t('Custom'))
+  );
 
   foreach (module_invoke_all('token_list', 'all') as $group => $tokens) {
     $rows = array();
